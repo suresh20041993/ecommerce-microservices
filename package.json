@@ -1,0 +1,10 @@
+{
+  "name": "microservices-example",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix api-gateway\" \"npm run dev --prefix user-service\" \"npm run dev --prefix product-service\" \"npm run dev --prefix order-service\""
+  },
+  "devDependencies": {
+    "concurrently": "^5.3.0"
+  }
+}

@@ -1,5 +1,6 @@
 const User = require('../models/User');
-
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 // Create a new user
 const createUser = async (req, res) => {
     try {
@@ -11,6 +12,79 @@ const createUser = async (req, res) => {
     }
 };
 
+const registerUser = async (req, res) => {
+    const { name, email, password ,userType} = req.body;
+
+    try {
+      let user = await User.findOne({ email });
+  
+      if (user) {
+        return res.status(400).json({ msg: 'User already exists' });
+      }
+  
+      if (!userType) {
+        return res.status(400).json({ msg: 'userType Not Available' });
+      }
+      user = new User({ name, email, password ,userType});
+      await user.save();
+  
+      const payload = {
+        user: {
+          id: user.id
+        }
+      };
+  
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' },
+        (err, token) => {
+          if (err) throw err;
+          res.json({ token });
+        }
+      );
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+const login = async (req, res) => {
+    const { email, password } = req.body;
+  
+    try {
+      let user = await User.findOne({ email });
+  
+      if (!user) {
+        return res.status(400).json({ msg: 'Invalid Credentials',status:false });
+      }
+  
+      const isMatch = await bcrypt.compare(password, user.password);
+  
+      if (!isMatch) {
+        return res.status(400).json({ msg: 'Invalid Credentials',status:false });
+      }
+  
+      const payload = {
+        user: {
+          id: user.id
+        }
+      };
+  
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' },
+        (err, token) => {
+          if (err) throw err;
+          res.json({ token,status:true });
+        }
+      );
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send({ msg: 'Server error',status:false });
+    }
+  };
 // Get all users
 const getUsers = async (req, res) => {
     try {
@@ -65,5 +139,7 @@ module.exports = {
     getUsers,
     getUserById,
     updateUserById,
-    deleteUserById
+    deleteUserById,
+    registerUser,
+    login
 };
